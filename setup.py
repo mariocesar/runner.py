@@ -11,11 +11,11 @@ description, long_description = (
 
 
 setup(
-    name='run.py',
+    name='runner.py',
     author='Mario César Señoranis Ayala',
     author_email='mariocesar.c50@gmail.com',
-    version='0.14',
-    url='https://github.com/mariocesar/run.py',
+    version='0.1',
+    url='https://github.com/mariocesar/runner.py',
     description=description,
     long_description=f'\n{long_description}',
     package_dir={'': 'src'},

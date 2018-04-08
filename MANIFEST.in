@@ -1,0 +1,6 @@
+include README.md
+include MANIFEST.in
+
+recursive-include src/ *
+
+recursive-exclude * *.py[co]
