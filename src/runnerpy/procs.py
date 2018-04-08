@@ -7,7 +7,9 @@ from itertools import chain
 
 from .colors import Color
 
-colors = chain([Color.cyan, Color.magenta, Color.yellow, Color.green, Color.light_blue, Color.white])
+colors = chain([Color.cyan, Color.magenta, Color.yellow,
+                Color.green, Color.light_blue, Color.white,
+                Color.grey, Color.light_red, Color.light_green])
 
 
 class SubprocessProtocol(asyncio.SubprocessProtocol):
