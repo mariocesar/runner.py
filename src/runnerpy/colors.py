@@ -19,7 +19,7 @@ class ColorMeta(type):
         colors = {}
         for i, name in enumerate(NAMES):
             colors[name] = '\033[{0}m'.format(str(30 + i))
-            colors[f'bold_{name}'] = cls.bold + str(30 + i)
+            colors[f'bold_{name}'] = cls.bold + colors[name]
             colors[f'light_{name}'] = '\033[{0}m'.format(str(90 + i))
         attributes['colors'] = colors
         attributes.update(colors)
@@ -30,5 +30,9 @@ class Color(metaclass=ColorMeta):
 
     @classmethod
     def fmt(cls, message, **context):
-        context = {**context, **cls.colors}
+        context = {**context, **cls.colors,
+                   'bold': cls.bold,
+                   'underline': cls.underline,
+                   'reset': cls.reset}
+
         return message.format(**context)

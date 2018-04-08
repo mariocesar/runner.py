@@ -10,10 +10,18 @@ colors = chain([Color.cyan, Color.magenta, Color.yellow, Color.green, Color.ligh
 
 
 class SubprocessProtocol(asyncio.SubprocessProtocol):
-    def __init__(self, future, prefix, color):
+    def __init__(self, future, color, proc):
         self.color = color
         self.future = future
-        self.prefix = prefix
+        self.prefix = proc.prefix
+        self.proc = proc
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+        sys.stdout.write(f'{Color.bold}{self.prefix} => {self.color}{self.proc.cmd}{Color.reset}\n')
+        sys.stdout.flush()
+
 
     def pipe_data_received(self, fd, data):
         out = data.decode().strip().split('\n')
@@ -23,14 +31,13 @@ class SubprocessProtocol(asyncio.SubprocessProtocol):
                                        line=line))
         sys.stdout.flush()
 
-    def pipe_connection_lost(self, fd, exc):
-        self.future.set_exception(exc)
-
-    def connection_lost(self, exc):
-        self.future.set_exception(exc)
-
     def process_exited(self):
-        self.future.set_result(True)
+        returncode = self.transport.get_returncode()
+        sys.stdout.write(Color.fmt('{bold}{proc.prefix} | {proc.color}{line}{reset}\n',
+                                   proc=self,
+                                   line=f'{self.proc.cmd} => Process exited'))
+
+        self.future.set_result(returncode)
 
 
 class Process:
@@ -44,20 +51,19 @@ class Process:
         future = asyncio.Future(loop=self.loop)
         color = next(colors)
 
-        sys.stdout.write(f'{Color.bold}{self.prefix} => {color}{self.cmd}{Color.reset}\n')
-        sys.stdout.flush()
-
         process = await self.loop.subprocess_exec(
-            lambda: SubprocessProtocol(future, self.prefix, color),
+            lambda: SubprocessProtocol(future, color, self),
             *shlex.split(self.cmd),
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
 
-        pipe, protocol = process
+        transport, protocol = process
 
-        self.queue.put((pipe, protocol))
+        self.queue.put((transport, protocol))
 
         await future
-        pipe.close()
+
+        transport.close()
+
         return protocol.output

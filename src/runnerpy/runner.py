@@ -26,25 +26,13 @@ class Runner:
         try:
             self.loop.run_forever()
         except KeyboardInterrupt:
+            sys.stdout.write('\n')
             sys.stdout.write(Color.fmt('{bold_red}==> Ctrl+C pressed{reset}\n'))
         finally:
             sys.stdout.write(Color.fmt('{bold_red}==> Stopping services{reset}\n'))
-            runner.stop()
+            self.stop()
             os.killpg(0, signal.SIGTERM)
 
     def stop(self):
         self.loop.stop()
         self.loop.close()
-
-
-if __name__ == '__main__':
-    runner = Runner()
-
-    runner.attach('ls -al')
-    runner.attach('ls -al /')
-    runner.attach('echo Hello')
-    runner.attach('tail -f /var/log/syslog')
-    runner.attach('tail -f /var/log/auth.log')
-    runner.attach('tail -f /var/log/app/history.log')
-
-    runner.start()
