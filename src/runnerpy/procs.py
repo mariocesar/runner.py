@@ -1,5 +1,6 @@
 import asyncio
 import shlex
+import signal
 import sys
 from asyncio import subprocess
 from itertools import chain
@@ -10,60 +11,74 @@ colors = chain([Color.cyan, Color.magenta, Color.yellow, Color.green, Color.ligh
 
 
 class SubprocessProtocol(asyncio.SubprocessProtocol):
-    def __init__(self, future, color, proc):
-        self.color = color
-        self.future = future
-        self.prefix = proc.prefix
+    def __init__(self, proc):
         self.proc = proc
 
     def connection_made(self, transport):
         self.transport = transport
-
-        sys.stdout.write(f'{Color.bold}{self.prefix} => {self.color}{self.proc.cmd}{Color.reset}\n')
+        self.proc.log(f'Running {self.proc.cmd} pidfile={transport.get_pid()}', transport)
         sys.stdout.flush()
-
 
     def pipe_data_received(self, fd, data):
         out = data.decode().strip().split('\n')
         for line in out:
-            sys.stdout.write(Color.fmt('{bold}{proc.prefix} | {reset}{proc.color}{line}{reset}\n',
-                                       proc=self,
-                                       line=line))
+            self.proc.log(line, self.transport)
+
         sys.stdout.flush()
 
     def process_exited(self):
         returncode = self.transport.get_returncode()
-        sys.stdout.write(Color.fmt('{bold}{proc.prefix} | {proc.color}{line}{reset}\n',
-                                   proc=self,
-                                   line=f'{self.proc.cmd} => Process exited'))
-
-        self.future.set_result(returncode)
+        self.proc.returncode.set_result(returncode)
 
 
 class Process:
+    transport = None
+    protocol = None
+
     def __init__(self, cmd, runner):
         self.cmd = cmd
         self.prefix = self.cmd.split()[0]
         self.queue = runner.queue
         self.loop = runner.loop
+        self.color = next(colors)
+        self.returncode = asyncio.Future(loop=self.loop)
+        self.returncode.add_done_callback(self.returncode_callback)
+
+    def returncode_callback(self, future):
+        self.log(f'Process exited returncode={future.result()}')
 
     async def __call__(self):
-        future = asyncio.Future(loop=self.loop)
-        color = next(colors)
+        command = shlex.split(self.cmd)
 
         process = await self.loop.subprocess_exec(
-            lambda: SubprocessProtocol(future, color, self),
-            *shlex.split(self.cmd),
+            lambda: SubprocessProtocol(self),
+            *command,
             stdin=None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
 
-        transport, protocol = process
+        self.transport, self.protocol = process
+        self.queue.put((self.transport, self.protocol))
 
-        self.queue.put((transport, protocol))
+    def log(self, line, transport=None):
+        if transport is None:
+            transport = self.transport
 
-        await future
+        sys.stdout.write(Color.fmt(
+            '{bold}{prefix} {color}pid={pid}{reset} | {reset}{color}{line}{reset}\n',
+            color=self.color,
+            pid=transport.get_pid() if transport else '',
+            prefix=self.prefix,
+            line=line))
 
-        transport.close()
+        sys.stdout.flush()
 
-        return protocol.output
+    async def stop(self):
+        self.log(f'Closing {self.cmd} pid={self.transport.get_pid()}')
+
+        try:
+            self.transport.send_signal(signal.SIGINT)
+        except ProcessLookupError:
+            pass
+
+        await self.returncode

@@ -1,6 +1,5 @@
 import asyncio
 import os
-import signal
 import sys
 
 from .colors import Color
@@ -17,10 +16,10 @@ class Runner:
         self.future = None
 
     def attach(self, command):
-        self.tasks.append(Process(cmd=command, runner=self))
+        process = Process(cmd=command, runner=self)
+        self.tasks.append(process)
 
     def start(self):
-        os.setpgrp()
         asyncio.ensure_future(asyncio.wait([self.loop.create_task(task()) for task in self.tasks]))
 
         try:
@@ -30,9 +29,11 @@ class Runner:
             sys.stdout.write(Color.fmt('{bold_red}==> Ctrl+C pressed{reset}\n'))
         finally:
             sys.stdout.write(Color.fmt('{bold_red}==> Stopping services{reset}\n'))
-            self.stop()
-            os.killpg(0, signal.SIGTERM)
 
-    def stop(self):
-        self.loop.stop()
-        self.loop.close()
+            self.loop.run_until_complete(self.stop())
+            self.loop.stop()
+            self.loop.close()
+
+    async def stop(self):
+        await asyncio.wait([task.stop() for task in self.tasks])
+        sys.stdout.write(Color.fmt('{bold_red}==> Bye!{reset}\n'))
