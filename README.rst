@@ -13,4 +13,4 @@ Install with pip.
 
 .. code-block:: console
 
-    pip install run.py
+    pip install runner.py
