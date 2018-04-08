@@ -27,7 +27,6 @@ class ColorMeta(type):
 
 
 class Color(metaclass=ColorMeta):
-
     @classmethod
     def fmt(cls, message, **context):
         context = {**context, **cls.colors,
