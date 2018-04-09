@@ -1,4 +1,4 @@
-run.py
+runner.py Run, Attach, Schedule, Repeat, Chain and React to commands.
 
 .. image:: https://badge.fury.io/py/run.py.svg
     :target: https://pypi.org/project/runner.py/
