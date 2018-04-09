@@ -14,7 +14,7 @@ setup(
     name='runner.py',
     author='Mario César Señoranis Ayala',
     author_email='mariocesar.c50@gmail.com',
-    version='0.3',
+    version='0.4',
     url='https://github.com/mariocesar/runner.py',
     description=description,
     long_description=f'\n{long_description}',
