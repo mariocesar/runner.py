@@ -12,17 +12,20 @@ description, long_description = (
 
 setup(
     name='runner.py',
+    version='0.5',
+    url='https://github.com/mariocesar/runner.py',
     author='Mario César Señoranis Ayala',
     author_email='mariocesar.c50@gmail.com',
-    version='0.4',
-    url='https://github.com/mariocesar/runner.py',
     description=description,
     long_description=f'\n{long_description}',
+    long_description_content_type='text/x-rst',
+    license='MIT',
     package_dir={'': 'src'},
     packages=find_packages('src'),
     python_requires='>=3.6',
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'pytest-cov'],
+    keywords='runner process asyncio',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
