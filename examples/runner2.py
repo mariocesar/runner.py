@@ -1,11 +1,13 @@
+import asyncio
+
 from runnerpy.runner import Runner
 
 if __name__ == '__main__':
-    runner = Runner()
+    loop = asyncio.get_event_loop()
 
-    runner.attach('ls /')
-    runner.attach('ls /home/')
-    runner.attach('./my-script.sh')
+    runner = Runner(loop)
+    runner.run('ls /')
+    runner.run('ls /home/', essential=True)
+    runner.run('tail -f /var/log/syslog')
 
     runner.start()
-

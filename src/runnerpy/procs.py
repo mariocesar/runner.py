@@ -12,6 +12,11 @@ colors = chain([Color.cyan, Color.magenta, Color.yellow,
                 Color.grey, Color.light_red, Color.light_green])
 
 
+class EssentialProcessStoped(Exception):
+    def __init__(self, proc):
+        self.proc = proc
+
+
 class SubprocessProtocol(asyncio.SubprocessProtocol):
     def __init__(self, proc):
         self.proc = proc
@@ -23,6 +28,7 @@ class SubprocessProtocol(asyncio.SubprocessProtocol):
 
     def pipe_data_received(self, fd, data):
         out = data.decode().strip().split('\n')
+
         for line in out:
             self.proc.log(line, self.transport)
 
@@ -37,12 +43,15 @@ class Process:
     transport = None
     protocol = None
 
-    def __init__(self, cmd, runner):
+    def __init__(self, cmd, runner, essential=False):
         self.cmd = cmd
+        self.essential = essential
         self.prefix = self.cmd.split()[0]
         self.queue = runner.queue
         self.loop = runner.loop
+        self.runner = runner
         self.color = next(colors)
+
         self.returncode = asyncio.Future(loop=self.loop)
         self.returncode.add_done_callback(self.returncode_callback)
 
@@ -61,6 +70,13 @@ class Process:
 
         self.transport, self.protocol = process
         self.queue.put((self.transport, self.protocol))
+
+        await self.returncode
+
+        if self.essential:
+            self.log(f'Essential process has stopped, stopping runner')
+
+            await self.runner.stop(exitcode=1)
 
     def log(self, line, transport=None):
         if transport is None:
