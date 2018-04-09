@@ -34,9 +34,10 @@ A simple example on how to use it.
 
 Now a Django app will run along the celery worker. Hit ctrl+c to stop both.
 
-Some examples: Creating a backup
+Some examples:
 
 .. code-block:: python
+
     import asyncio
 
     from runnerpy.runner import Runner
@@ -49,10 +50,12 @@ Some examples: Creating a backup
         runner.run('pg_dump --all')
 
         runner.start()
+::
 
-Some examples: Creating a backup
+Follow updates in log, stop when `apt update` finish
 
 .. code-block:: python
+
     import asyncio
 
     from runnerpy.runner import Runner
@@ -61,7 +64,8 @@ Some examples: Creating a backup
         loop = asyncio.get_event_loop()
 
         runner = Runner(loop)
+        runner.run('sudo apt update', essential=True)
         runner.run('tail -f /var/log/syslog)
-        runner.run('ls -al /home')
 
         runner.start()
+::
